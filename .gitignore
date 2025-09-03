@@ -11,7 +11,7 @@ frontend/build/
 .env
 api/.env
 frontend/.env
-
+.vscode/
 # OS / Editor files
 .DS_Store
 Thumbs.db

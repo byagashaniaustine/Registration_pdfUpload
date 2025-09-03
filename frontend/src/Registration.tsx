@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Registration = () => {
   const [firstName, setFirstName] = useState<string>("");
@@ -6,22 +7,18 @@ const Registration = () => {
   const [occupation, setOccupation] = useState<string>("");
   const [residence, setResidence] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
-  const [message, setMessage] = useState<string>("");
+
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setMessage("Uploading file...");
-
-    if (!file) {
-      setMessage("Please select a file to upload.");
-      return;
-    }
+    if (!file) return alert("Please select a file to upload.");
 
     try {
-      // STEP 1: Upload the file
       const fileFormData = new FormData();
       fileFormData.append("file", file);
 
+      // Upload the file
       const uploadRes = await fetch("/api/uploadFile", {
         method: "POST",
         body: fileFormData,
@@ -30,17 +27,10 @@ const Registration = () => {
       const uploadData = await uploadRes.json();
       if (!uploadRes.ok) throw new Error(uploadData.message || "File upload failed.");
 
-      setMessage("File uploaded. Registering user data...");
       const fileUrl: string = uploadData.fileUrl;
 
-      // STEP 2: Submit the rest of the data
-      const registrationData = {
-        firstName,
-        lastName,
-        occupation,
-        residence,
-        fileUrl,
-      };
+      // Submit registration data
+      const registrationData = { firstName, lastName, occupation, residence, fileUrl };
 
       const registrationRes = await fetch("/api/registration", {
         method: "POST",
@@ -48,12 +38,16 @@ const Registration = () => {
         body: JSON.stringify(registrationData),
       });
 
-      const registrationResult = await registrationRes.json();
-      if (!registrationRes.ok) throw new Error(registrationResult.message || "Registration failed.");
+      if (!registrationRes.ok) {
+        const regData = await registrationRes.json();
+        throw new Error(regData.message || "Registration failed.");
+      }
 
-      setMessage(registrationResult.message || "Registration completed successfully!");
+      // Redirect to success page
+      navigate("/success");
     } catch (err: unknown) {
-      setMessage(`Error: ${err instanceof Error ? err.message : "Unknown error"}`);
+      if (err instanceof Error) alert(err.message);
+      else alert("Unknown error occurred");
     }
   };
 
@@ -80,7 +74,6 @@ const Registration = () => {
           className="w-full border p-2 rounded"
           required
         />
-
         <input
           type="text"
           placeholder="Last Name"
@@ -89,7 +82,6 @@ const Registration = () => {
           className="w-full border p-2 rounded"
           required
         />
-
         <input
           type="text"
           placeholder="Occupation"
@@ -98,7 +90,6 @@ const Registration = () => {
           className="w-full border p-2 rounded"
           required
         />
-
         <input
           type="text"
           placeholder="Residence area"
@@ -107,29 +98,21 @@ const Registration = () => {
           className="w-full border p-2 rounded"
           required
         />
-
-        {/* File input restored */}
-    <input
-  type="file"
-  accept="application/pdf"
-  onChange={handleFileChange}
-  className="w-full border p-2 rounded text-white"
-  required
-  aria-label="Upload PDF"
-  title="Upload PDF"
-/>
-
+        <input
+          type="file"
+          accept="application/pdf"
+          onChange={handleFileChange}
+          className="w-full border p-2 rounded"
+          required
+          aria-label="Upload PDF file"
+        />
 
         <button
           type="submit"
-          className="w-full bg-blue-900 text-white py-2 rounded hover:bg-blue-930"
+          className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
         >
           Submit
         </button>
-
-        {message && (
-          <p className="text-center text-white font-semibold">{message}</p>
-        )}
       </form>
     </div>
   );
