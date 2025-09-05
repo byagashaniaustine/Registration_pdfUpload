@@ -2,7 +2,6 @@ import { Hono } from "https://deno.land/x/hono@v4.3.11/mod.ts";
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-// Supabase setup
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")?.trim();
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
 
@@ -25,14 +24,15 @@ uploadFile.post("/", async (c) => {
     const fileData = new Uint8Array(await file.arrayBuffer());
     const fileName = `pdfs/${Date.now()}-${file.name}`;
 
+    // Upload to the bucket
     const { error: uploadError } = await supabase.storage
-      .from("pdfs")
+      .from("pdfs") // <- ensure this bucket exists
       .upload(fileName, fileData, { contentType: "application/pdf", upsert: true });
 
     if (uploadError) return c.json({ error: uploadError.message }, 500);
 
-    // getPublicUrl does NOT return an error property
-    const { data } = supabase.storage.from("pdf_files").getPublicUrl(fileName);
+    // Get public URL from the same bucket
+    const { data } = supabase.storage.from("pdfs").getPublicUrl(fileName);
     const fileUrl = data.publicUrl;
 
     if (!fileUrl) return c.json({ error: "Failed to retrieve public URL." }, 500);
